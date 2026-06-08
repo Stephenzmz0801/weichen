@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>每日打卡工具</title>
+<style>
+:root{--bg:#0f0f0f;--card:#1a1a1a;--card2:#222;--border:#2a2a2a;--text:#e0e0e0;--text2:#999;--accent:#ff6b35;--accent2:#ff8c42;--green:#4caf84;--blue:#5b9bd5;--purple:#9b7ed8;--red:#e0556a;--yellow:#f0c040;--radius:14px;--radius-sm:10px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}html{font-size:16px;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;padding-bottom:130px;-webkit-font-smoothing:antialiased}
+.header{position:sticky;top:0;z-index:100;background:rgba(15,15,15,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.header h1{font-size:1.15rem;font-weight:700}.header select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:6px 12px;font-size:0.85rem;font-family:var(--font);outline:none;max-width:130px}
+.tabs{display:flex;gap:2px;padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:0.82rem;cursor:pointer;transition:all 0.2s;white-space:nowrap;font-family:var(--font)}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.panel{display:none;padding:0 14px 16px}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.card-title{font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:6px}
+input,textarea,select{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.9rem;font-family:var(--font);outline:none;transition:border 0.2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}textarea{resize:vertical;min-height:60px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:9px 18px;border-radius:22px;border:none;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:var(--font);white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-sm{padding:5px 12px;font-size:0.75rem;border-radius:16px}.btn-block{width:100%;padding:12px;font-size:0.95rem}.btn-danger{background:var(--red);color:#fff}
+.stats-row{display:flex;gap:6px;margin-bottom:10px}.stat-card{flex:1;text-align:center;padding:10px 6px;background:var(--card2);border-radius:var(--radius-sm);border:1px solid var(--border)}.stat-card .val{font-size:1.3rem;font-weight:800}.stat-card .lbl{font-size:0.65rem;color:var(--text2);margin-top:1px}
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:0.68rem;font-weight:600}
+.tag-run{background:rgba(91,155,213,0.2);color:var(--blue)}.tag-workout{background:rgba(155,126,216,0.2);color:var(--purple)}.tag-rest{background:rgba(153,153,153,0.15);color:var(--text2)}
+.checklist{list-style:none}.check-item{display:flex;align-items:flex-start;gap:8px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}.check-item:last-child{border-bottom:none}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;margin-top:2px;font-size:0;color:transparent}
+.check-box.done{background:var(--green);border-color:var(--green);font-size:0.85rem;color:#fff;font-weight:700}
+.check-body{flex:1;min-width:0}.check-title{font-weight:600;font-size:0.88rem}.check-desc{font-size:0.78rem;color:var(--text2);margin-top:2px;line-height:1.4}
+.check-done .check-title{text-decoration:line-through;color:var(--text2)}.check-done .check-desc{opacity:0.5}
+.input-row{display:flex;gap:6px;align-items:flex-end}.input-row>div{flex:1}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(15,15,15,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.summary-text{font-size:0.82rem}.summary-text strong{color:var(--accent)}.summary-actions{display:flex;gap:6px}
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;width:90%;max-width:400px;max-height:80vh;overflow-y:auto}.modal h3{margin-bottom:10px}
+label{display:block;font-size:0.75rem;color:var(--text2);margin-bottom:3px;font-weight:500}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mb-8{margin-bottom:8px}.text-sm{font-size:0.78rem;color:var(--text2)}.text-center{text-align:center}
+.empty-state{text-align:center;padding:25px;color:var(--text2)}.empty-state .icon{font-size:2.2rem;margin-bottom:6px;display:block}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.progress-bar{height:5px;border-radius:3px;background:var(--border);margin-top:6px;overflow:hidden}.progress-fill{height:100%;border-radius:3px;background:var(--green);transition:width 0.3s}
+.meal-plan-card{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border-radius:var(--radius-sm);margin-bottom:6px;border:1px solid transparent}.meal-plan-card:hover{border-color:var(--border)}
+.meal-plan-info{flex:1;min-width:0}.meal-plan-name{font-weight:600;font-size:0.85rem}.meal-plan-detail{font-size:0.75rem;color:var(--text2);margin-top:1px}.meal-plan-kcal{font-weight:700;color:var(--accent);font-size:0.9rem;white-space:nowrap}
+.food-search-wrap{position:relative}.food-suggestions{position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--card2);border:1px solid var(--border);border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:180px;overflow-y:auto;display:none}.food-suggestions.show{display:block}
+.food-suggestion-item{padding:9px 12px;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.food-suggestion-item:hover{background:var(--card)}.food-suggestion-item .kcal-hint{color:var(--text2);font-size:0.75rem}
+.macro-inline{font-size:0.72rem;color:var(--text2);margin-left:4px}.macro-inline span{margin-right:4px}.p{color:var(--blue)}.c{color:var(--yellow)}.f{color:var(--purple)}.kcal{color:var(--accent);font-weight:700}
+.history-item{padding:10px 12px;background:var(--card2);border-radius:var(--radius-sm);margin-bottom:6px;border-left:3px solid var(--accent)}.history-date{font-size:0.75rem;color:var(--text2)}.history-summary{font-size:0.8rem;margin-top:3px;line-height:1.4}
+</style></head><body>
+
+<div class="header"><h1>&#x1F4CB; &#x6BCF;&#x65E5;&#x6253;&#x5361;</h1><select id="datePicker" onchange="onDateChange()"></select></div>
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="checklist">&#x2705; &#x4ECA;&#x65E5;&#x6253;&#x5361;</button>
+  <button class="tab-btn" data-tab="meals">&#x1F37D; &#x996E;&#x98DF;</button>
+  <button class="tab-btn" data-tab="workout">&#x1F3CB; &#x8BAD;&#x7EC3;</button>
+  <button class="tab-btn" data-tab="body">&#x1F4CF; &#x8EAB;&#x4F53;</button>
+  <button class="tab-btn" data-tab="history">&#x1F4CA; &#x5386;&#x53F2;</button>
+</div>
+
+<!-- CHECKLIST PANEL -->
+<div class="panel active" id="panel-checklist">
+  <div class="card" id="planCard">
+    <div class="card-header"><span class="card-title"><span class="icon">&#x1F4C5;</span><span id="planDayLabel">&#x4ECA;&#x65E5;&#x8BA1;&#x5212;</span></span><span id="planWeekBadge"></span></div>
+    <div id="planContent"><div class="empty-state"><span class="icon">&#x1F4ED;</span>&#x8BE5;&#x65E5;&#x671F;&#x6682;&#x65E0;&#x8BA1;&#x5212;</div></div>
+    <div class="progress-bar mt-8"><div class="progress-fill" id="planProgress" style="width:0%"></div></div>
+    <div class="text-sm mt-8" style="text-align:center" id="planProgressText">0/0 &#x5B8C;&#x6210;</div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="icon">&#x270F;&#xFE0F;</span>&#x81EA;&#x7531;&#x8BB0;&#x5F55;</span></div>
+    <div class="input-row"><input type="text" id="customCheckItem" placeholder="&#x6DFB;&#x52A0;&#x4E00;&#x6761;&#x6253;&#x5361;&#x9879;..."><button class="btn btn-primary btn-sm" onclick="addCustomCheck()" style="flex-shrink:0">&#x6DFB;&#x52A0;</button></div>
+    <div id="customChecklist" class="mt-8"></div>
+  </div>
+</div>
+
+<!-- MEALS PANEL -->
+<div class="panel" id="panel-meals">
+  <div class="stats-row">
+    <div class="stat-card"><div class="val" id="statKcal" style="color:var(--accent)">0</div><div class="lbl">&#x5343;&#x5361;</div></div>
+    <div class="stat-card"><div class="val" id="statProtein" style="color:var(--blue)">0g</div><div class="lbl">&#x86CB;&#x767D;&#x8D28;</div></div>
+    <div class="stat-card"><div class="val" id="statCarb" style="color:var(--yellow)">0g</div><div class="lbl">&#x78B3;&#x6C34;</div></div>
+    <div class="stat-card"><div class="val" id="statFat" style="color:var(--purple)">0g</div><div class="lbl">&#x8102;&#x80AA;</div></div>
+  </div>
+  <div class="card" id="mealPlanCard"><div class="card-header"><span class="card-title"><span class="icon">&#x1F4CB;</span>&#x4ECA;&#x65E5;&#x996E;&#x98DF;&#x8BA1;&#x5212;</span></div><div id="mealPlanList"></div></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="icon">&#x1F50D;</span>&#x641C;&#x7D22;&#x98DF;&#x7269;</span></div>
+    <div class="food-search-wrap"><input type="text" id="foodSearch" placeholder="&#x8F93;&#x5165;&#x98DF;&#x7269;&#x540D;&#x79F0;..." autocomplete="off"><div class="food-suggestions" id="foodSuggestions"></div></div>
+    <div class="row-2 mt-8"><div><label>&#x4EFD;&#x91CF;(g)</label><input type="number" id="foodWeight" value="100" min="0"></div><div><label>&#x9910;&#x522B;</label><select id="mealType"><option>&#x65E9;&#x9910;</option><option>&#x5348;&#x9910;</option><option>&#x665A;&#x9910;</option><option>&#x52A0;&#x9910;</option><option>&#x96F6;&#x98DF;</option></select></div></div>
+    <button class="btn btn-primary btn-block mt-8" onclick="addFood()">&#x2795; &#x6DFB;&#x52A0;</button>
+  </div>
+  <div id="todayMeals"><div class="empty-state"><span class="icon">&#x1F37D;&#xFE0F;</span>&#x4ECA;&#x65E5;&#x65E0;&#x996E;&#x98DF;&#x8BB0;&#x5F55;</div></div>
+</div>
+
+<!-- WORKOUT PANEL -->
+<div class="panel" id="panel-workout">
+  <div class="card" id="workoutPlanCard"><div class="card-header"><span class="card-title"><span class="icon">&#x1F4CB;</span>&#x4ECA;&#x65E5;&#x8BAD;&#x7EC3;&#x8BA1;&#x5212;</span></div><div id="workoutPlanList"></div></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="icon">&#x2795;</span>&#x624B;&#x52A8;&#x8BB0;&#x5F55;&#x8BAD;&#x7EC3;</span></div>
+    <div><label>&#x8BAD;&#x7EC3;&#x7C7B;&#x578B;</label><select id="workoutCategory"><option>&#x80F8;&#x90E8;</option><option>&#x80CC;&#x90E8;</option><option>&#x80A9;&#x90E8;</option><option>&#x624B;&#x81C2;</option><option>&#x817F;&#x90E8;</option><option>&#x6838;&#x5FC3;</option><option>&#x6709;&#x6C27;</option><option>&#x5168;&#x8EAB;</option><option>&#x5176;&#x4ED6;</option></select></div>
+    <div class="mt-8"><label>&#x52A8;&#x4F5C;&#x540D;&#x79F0;</label><input type="text" id="workoutExName" placeholder="&#x5982;&#xFF1A;&#x6760;&#x94C3;&#x5367;&#x63A8;..." list="exList"><datalist id="exList"></datalist></div>
+    <div class="row-3 mt-8" id="strengthFields"><div><label>&#x7EC4;&#x6570;</label><input type="number" id="workoutSets" min="0"></div><div><label>&#x6B21;&#x6570;</label><input type="number" id="workoutReps" min="0"></div><div><label>&#x91CD;&#x91CF;kg</label><input type="number" id="workoutWeight" min="0" step="0.5"></div></div>
+    <div id="cardioFields" style="display:none"><div class="row-2 mt-8"><div><label>&#x65F6;&#x957F;(&#x5206;&#x949F;)</label><input type="number" id="workoutDuration" min="0"></div><div><label>&#x8DDD;&#x79BB;(km)</label><input type="number" id="workoutDistance" min="0" step="0.1"></div></div></div>
+    <div class="mt-8"><label>&#x5907;&#x6CE8;</label><input type="text" id="workoutNote"></div>
+    <button class="btn btn-primary btn-block mt-8" onclick="addWorkout()">&#x2795; &#x6DFB;&#x52A0;&#x8BAD;&#x7EC3;</button>
+  </div>
+  <div id="todayWorkouts"><div class="empty-state"><span class="icon">&#x1F3CB;&#xFE0F;</span>&#x4ECA;&#x65E5;&#x65E0;&#x8BAD;&#x7EC3;&#x8BB0;&#x5F55;</div></div>
+</div>
+
+<!-- BODY PANEL -->
+<div class="panel" id="panel-body">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="icon">&#x1F4CF;</span>&#x8EAB;&#x4F53;&#x6570;&#x636E;</span></div>
+    <div class="row-2"><div><label>&#x4F53;&#x91CD;(kg)</label><input type="number" id="bodyWeight" step="0.1" min="0"></div><div><label>&#x4F53;&#x8102;&#x7387;(%)</label><input type="number" id="bodyFat" step="0.1" min="0" max="60"></div></div>
+    <div class="row-2 mt-8"><div><label>&#x8170;&#x56F4;(cm)</label><input type="number" id="bodyWaist" step="0.1" min="0"></div><div><label>&#x6668;&#x8109;</label><input type="number" id="bodyPulse" min="0"></div></div>
+    <div class="row-2 mt-8"><div><label>&#x7761;&#x7720;(h)</label><input type="number" id="bodySleep" step="0.5" min="0" max="24"></div><div><label>&#x5B9E;&#x9645;&#x996E;&#x6C34;(L)</label><input type="number" id="bodyWater" step="0.1" min="0"></div></div>
+    <div class="mt-8"><label>&#x819D;&#x76D6;&#x72B6;&#x6001;(0-10)</label><input type="range" id="bodyKnee" min="0" max="10" value="10" style="padding:0"><span id="kneeVal" class="text-sm">10</span></div>
+    <button class="btn btn-primary btn-block mt-8" onclick="addBodyData()">&#x1F4BE; &#x4FDD;&#x5B58;</button>
+  </div>
+  <div id="bodyHistory"></div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div class="panel" id="panel-history">
+  <div class="card"><div class="card-header"><span class="card-title"><span class="icon">&#x1F4CA;</span>&#x5386;&#x53F2;&#x8BB0;&#x5F55;</span><div style="display:flex;gap:6px"><button class="btn btn-sm btn-outline" onclick="exportData()">&#x1F4E4; &#x5BFC;&#x51FA;</button><button class="btn btn-sm btn-outline" onclick="showImport()">&#x1F4E5; &#x5BFC;&#x5165;</button></div></div></div>
+  <div id="historyList"><div class="empty-state"><span class="icon">&#x1F4CA;</span>&#x6682;&#x65E0;&#x8BB0;&#x5F55;</div></div>
+</div>
+
+<!-- SUMMARY BAR -->
+<div class="summary-bar"><div class="summary-text"><span id="summaryContent">&#x4ECA;&#x5929; <strong>0 kcal</strong> &#xB7; 0/0 &#x5B8C;&#x6210;</span></div><div class="summary-actions"><button class="btn btn-sm btn-outline" onclick="switchTab('history')">&#x1F4CA;</button><button class="btn btn-sm btn-primary" onclick="exportData()">&#x1F4E4;</button></div></div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="importModal"><div class="modal"><h3>&#x1F4E5; &#x5BFC;&#x5165;&#x6570;&#x636E;</h3><p class="text-sm mb-8">&#x7C98;&#x8D34;&#x4E4B;&#x524D;&#x5BFC;&#x51FA;&#x7684; JSON &#x6062;&#x590D;&#x6570;&#x636E;</p><textarea id="importData"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary" onclick="doImport()" style="flex:1">&#x5BFC;&#x5165;</button><button class="btn btn-outline" onclick="hideImport()" style="flex:1">&#x53D6;&#x6D88;</button></div></div></div>
+<script>
+const FOOD_DB = [{"name": "白米饭", "kcal": 116, "p": 2.6, "c": 25.9, "f": 0.3}, {"name": "馒头", "kcal": 223, "p": 7.0, "c": 44.2, "f": 1.1}, {"name": "面条(煮)", "kcal": 110, "p": 3.9, "c": 22.0, "f": 0.4}, {"name": "全麦面包", "kcal": 246, "p": 10.5, "c": 43.5, "f": 3.6}, {"name": "燕麦片", "kcal": 367, "p": 13.5, "c": 66.3, "f": 6.7}, {"name": "小米粥", "kcal": 46, "p": 1.4, "c": 8.4, "f": 0.7}, {"name": "红薯", "kcal": 86, "p": 1.6, "c": 20.1, "f": 0.2}, {"name": "玉米", "kcal": 112, "p": 4.0, "c": 22.8, "f": 1.5}, {"name": "土豆", "kcal": 77, "p": 2.0, "c": 17.5, "f": 0.1}, {"name": "糙米饭", "kcal": 123, "p": 2.7, "c": 25.6, "f": 0.9}, {"name": "饺子", "kcal": 240, "p": 8.5, "c": 28.0, "f": 10.0}, {"name": "鸡胸肉", "kcal": 133, "p": 31.0, "c": 0, "f": 1.2}, {"name": "鸡腿肉", "kcal": 181, "p": 20.5, "c": 0, "f": 11.0}, {"name": "鸡蛋(整)", "kcal": 144, "p": 13.3, "c": 1.5, "f": 9.5}, {"name": "鸡蛋白", "kcal": 52, "p": 11.6, "c": 0.8, "f": 0.1}, {"name": "猪瘦肉", "kcal": 143, "p": 20.3, "c": 1.5, "f": 6.2}, {"name": "猪五花肉", "kcal": 395, "p": 13.5, "c": 0, "f": 38.0}, {"name": "牛肉(瘦)", "kcal": 107, "p": 21.3, "c": 1.3, "f": 2.0}, {"name": "牛排", "kcal": 180, "p": 23.0, "c": 0, "f": 10.0}, {"name": "三文鱼", "kcal": 208, "p": 20.4, "c": 0, "f": 13.4}, {"name": "虾仁", "kcal": 99, "p": 20.8, "c": 0, "f": 1.5}, {"name": "带鱼", "kcal": 127, "p": 17.7, "c": 0, "f": 6.2}, {"name": "鳕鱼", "kcal": 82, "p": 18.0, "c": 0, "f": 0.8}, {"name": "鲈鱼", "kcal": 105, "p": 18.6, "c": 0, "f": 3.4}, {"name": "豆腐", "kcal": 76, "p": 8.1, "c": 2.1, "f": 3.7}, {"name": "豆浆", "kcal": 31, "p": 2.9, "c": 1.3, "f": 1.6}, {"name": "毛豆", "kcal": 131, "p": 13.1, "c": 10.5, "f": 5.0}, {"name": "西兰花", "kcal": 34, "p": 2.8, "c": 6.6, "f": 0.4}, {"name": "菠菜", "kcal": 23, "p": 2.9, "c": 3.6, "f": 0.3}, {"name": "生菜", "kcal": 15, "p": 1.4, "c": 2.1, "f": 0.2}, {"name": "番茄", "kcal": 18, "p": 0.9, "c": 3.9, "f": 0.2}, {"name": "黄瓜", "kcal": 15, "p": 0.7, "c": 2.9, "f": 0.1}, {"name": "胡萝卜", "kcal": 41, "p": 1.0, "c": 9.6, "f": 0.2}, {"name": "白菜", "kcal": 13, "p": 1.5, "c": 2.2, "f": 0.2}, {"name": "芹菜", "kcal": 14, "p": 0.7, "c": 3.0, "f": 0.1}, {"name": "青椒", "kcal": 20, "p": 0.9, "c": 4.6, "f": 0.2}, {"name": "蘑菇", "kcal": 22, "p": 3.1, "c": 2.1, "f": 0.3}, {"name": "洋葱", "kcal": 40, "p": 1.1, "c": 9.0, "f": 0.1}, {"name": "苹果", "kcal": 52, "p": 0.3, "c": 13.8, "f": 0.2}, {"name": "香蕉", "kcal": 89, "p": 1.1, "c": 22.8, "f": 0.3}, {"name": "橙子", "kcal": 47, "p": 0.9, "c": 11.8, "f": 0.1}, {"name": "葡萄", "kcal": 69, "p": 0.7, "c": 18.1, "f": 0.2}, {"name": "西瓜", "kcal": 30, "p": 0.6, "c": 7.6, "f": 0.1}, {"name": "草莓", "kcal": 32, "p": 0.7, "c": 7.7, "f": 0.3}, {"name": "蓝莓", "kcal": 57, "p": 0.7, "c": 14.5, "f": 0.3}, {"name": "牛油果", "kcal": 160, "p": 2.0, "c": 8.5, "f": 14.7}, {"name": "牛奶(全脂)", "kcal": 61, "p": 3.0, "c": 4.8, "f": 3.5}, {"name": "牛奶(脱脂)", "kcal": 34, "p": 3.4, "c": 4.9, "f": 0.1}, {"name": "酸奶(原味)", "kcal": 61, "p": 3.5, "c": 7.0, "f": 2.0}, {"name": "巧克力", "kcal": 546, "p": 4.9, "c": 59.4, "f": 31.9}, {"name": "薯片", "kcal": 536, "p": 5.5, "c": 50.5, "f": 34.0}, {"name": "饼干", "kcal": 433, "p": 8.0, "c": 67.0, "f": 14.5}, {"name": "可乐", "kcal": 42, "p": 0, "c": 10.6, "f": 0}, {"name": "啤酒", "kcal": 43, "p": 0.5, "c": 3.6, "f": 0}, {"name": "奶茶", "kcal": 65, "p": 1.2, "c": 11.0, "f": 1.8}, {"name": "蛋白粉(乳清)", "kcal": 380, "p": 80.0, "c": 5.0, "f": 4.0}, {"name": "坚果(混合)", "kcal": 607, "p": 17.0, "c": 16.0, "f": 53.0}, {"name": "花生酱", "kcal": 588, "p": 25.0, "c": 20.0, "f": 50.0}, {"name": "西红柿炒蛋", "kcal": 112, "p": 5.2, "c": 4.0, "f": 8.0}, {"name": "宫保鸡丁", "kcal": 185, "p": 14.0, "c": 8.0, "f": 11.0}, {"name": "麻婆豆腐", "kcal": 120, "p": 7.0, "c": 6.0, "f": 7.0}, {"name": "红烧肉", "kcal": 305, "p": 10.5, "c": 15.0, "f": 22.0}, {"name": "清蒸鱼", "kcal": 105, "p": 17.0, "c": 1.0, "f": 3.5}, {"name": "蛋炒饭", "kcal": 175, "p": 5.5, "c": 24.0, "f": 6.5}, {"name": "兰州拉面", "kcal": 130, "p": 5.0, "c": 22.0, "f": 3.0}, {"name": "杂粮饭", "kcal": 120, "p": 3.0, "c": 25.0, "f": 1.0}, {"name": "荞麦面", "kcal": 130, "p": 4.5, "c": 26.0, "f": 1.0}, {"name": "水煮蛋", "kcal": 144, "p": 13.3, "c": 1.5, "f": 9.5}, {"name": "煎蛋", "kcal": 196, "p": 13.0, "c": 1.5, "f": 15.0}];
+const EXERCISE_DB = {"胸部": ["杠铃卧推", "哑铃卧推", "上斜卧推", "哑铃飞鸟", "绳索夹胸", "俯卧撑", "双杠臂屈伸"], "背部": ["引体向上", "杠铃划船", "哑铃划船", "坐姿划船", "高位下拉", "硬拉", "面拉"], "肩部": ["杠铃推举", "哑铃推肩", "侧平举", "前平举", "俯身飞鸟"], "手臂": ["杠铃弯举", "哑铃弯举", "绳索下压", "窄距卧推", "仰卧臂屈伸"], "腿部": ["杠铃深蹲", "前蹲", "腿举", "腿屈伸", "箭步蹲", "罗马尼亚硬拉", "提踵"], "核心": ["平板支撑", "卷腹", "悬垂举腿", "俄罗斯转体", "登山跑", "V字卷腹"], "有氧": ["跑步", "骑行", "游泳", "跳绳", "椭圆机", "划船机", "快走", "HIIT"], "全身": ["战绳", "壶铃摇摆", "波比跳", "药球砸地", "农夫行走"], "其他": ["拉伸", "瑜伽", "普拉提", "拳击"]};
+const MEAL_PLANS = [{"code": "早餐B", "name": "快手燕麦套餐", "info": "~410kcal / P18 C58 F10 / ~5元", "ingredients": "黑咖啡、即食燕麦50g、水煮蛋1个、香蕉1根"}, {"code": "早餐C", "name": "卷饼火腿蛋", "info": "~440kcal / P26 C44 F16 / ~7元", "ingredients": "黑咖啡、全麦卷饼1张、煎蛋1个、生菜2片、低脂火腿2片"}, {"code": "早餐D", "name": "周末煎蛋吐司", "info": "~430kcal / P24 C40 F18 / ~6元", "ingredients": "黑咖啡、全麦面包2片、煎蛋2个、番茄半个"}, {"code": "午餐A", "name": "鸡胸肉杂粮饭", "info": "~520kcal / P42 C55 F12 / ~10元", "ingredients": "杂粮饭150g、鸡胸肉120g、西兰花100g、胡萝卜100g"}, {"code": "午餐B", "name": "鸡蛋虾仁饭", "info": "~530kcal / P40 C52 F16 / ~12元", "ingredients": "杂粮饭150g、虾仁100g、鸡蛋2个、青椒100g、洋葱100g"}, {"code": "午餐C", "name": "牛肉蔬菜饭", "info": "~540kcal / P38 C54 F18 / ~14元", "ingredients": "杂粮饭150g、瘦牛肉100g、彩椒100g、菠菜100g"}, {"code": "午餐D", "name": "豆腐鸡肉碗", "info": "~510kcal / P40 C58 F10 / ~9元", "ingredients": "杂粮饭150g、鸡胸肉80g、老豆腐100g、青菜200g"}, {"code": "晚餐A", "name": "番茄鸡蛋豆腐汤 + 杂粮饭", "info": "~480kcal / P30 C50 F16 / ~7元", "ingredients": "番茄1个、鸡蛋2个、嫩豆腐150g、杂粮饭100g"}, {"code": "晚餐B", "name": "清蒸鱼 + 黄瓜木耳 + 杂粮饭", "info": "~500kcal / P38 C48 F14 / ~14元", "ingredients": "鱼肉150g、黄瓜半根、木耳50g、杂粮饭100g"}, {"code": "晚餐C", "name": "鸡腿肉蔬菜炒 + 杂粮饭", "info": "~520kcal / P35 C52 F16 / ~10元", "ingredients": "去骨鸡腿肉120g、青椒100g、洋葱100g、杂粮饭100g"}, {"code": "晚餐D", "name": "虾仁西兰花 + 杂粮饭", "info": "~490kcal / P36 C50 F12 / ~13元", "ingredients": "虾仁120g、西兰花200g、杂粮饭100g"}, {"code": "晚餐E", "name": "瘦肉蔬菜汤面", "info": "~480kcal / P30 C55 F12 / ~9元", "ingredients": "荞麦面60g、瘦猪肉80g、青菜200g"}, {"code": "加餐A", "name": "经典训练后加餐", "info": "~200kcal / P16 / ~4元", "ingredients": "水煮蛋1个 + 牛奶200ml"}, {"code": "加餐B", "name": "酸奶坚果", "info": "~180kcal / P14 / ~6元", "ingredients": "希腊酸奶100g + 坚果10g"}, {"code": "加餐C", "name": "轻量恢复", "info": "~190kcal / P8 / ~4元", "ingredients": "香蕉半根 + 牛奶200ml"}];
+const WORKOUT_PLANS = [{"name": "练前热身", "content": "肩绕环×10；躯干转体×10；猫牛式×8；臀桥×10", "note": "3min"}, {"name": "跑前护膝", "content": "蚌式开合×15/侧；臀桥×12；动态热身5-10min", "note": "每次跑前"}, {"name": "跑后恢复", "content": "冷却步行；股四头肌/髂胫束拉伸+按揉；必要时冰敷10-15min", "note": "每次跑后"}, {"name": "上肢力量A", "content": "哑铃地板卧推3×12-15；单臂哑铃划船3×12/侧；坐姿推肩3×10-12；弯举3×12-15；俯身臂屈伸3×12-15；平板3×30-45s", "note": "周一/周五晚"}, {"name": "核心训练B", "content": "死虫式3×10/侧；鸟狗式3×8/侧；侧平板3×20-30s/侧；仰卧交替抬腿3×20；自行车卷腹3×20；臀桥3×15", "note": "周二/周四晚"}, {"name": "全身力量C", "content": "地板卧推3×12；单侧臀桥3×12/侧；哑铃划船3×12/侧；侧卧蚌式3×15/侧；坐姿推肩3×12；鸟狗式3×10/侧", "note": "周三晚"}, {"name": "练后拉伸", "content": "胸大肌、背阔肌、肱三头肌、腹直肌、臀大肌各30s", "note": "力量训练后"}];
+const DAILY_PLANS = {"2026-06-02": {"date": "2026-06-02", "week": "W2", "day": "周二", "morning_run_plan": "3km @6:15", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-03": {"date": "2026-06-03", "week": "W2", "day": "周三", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-04": {"date": "2026-06-04", "week": "W2", "day": "周四", "morning_run_plan": "3km @6:15", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-05": {"date": "2026-06-05", "week": "W2", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-06": {"date": "2026-06-06", "week": "W2", "day": "周六", "morning_run_plan": "5km @6:20", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-06-07": {"date": "2026-06-07", "week": "W2", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-06-08": {"date": "2026-06-08", "week": "W3", "day": "周一", "morning_run_plan": "3km @6:10", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-09": {"date": "2026-06-09", "week": "W3", "day": "周二", "morning_run_plan": "3km @6:10", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-10": {"date": "2026-06-10", "week": "W3", "day": "周三", "morning_run_plan": "3km @6:10", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-11": {"date": "2026-06-11", "week": "W3", "day": "周四", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-12": {"date": "2026-06-12", "week": "W3", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-13": {"date": "2026-06-13", "week": "W3", "day": "周六", "morning_run_plan": "5km @6:10", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-06-14": {"date": "2026-06-14", "week": "W3", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-06-15": {"date": "2026-06-15", "week": "W4", "day": "周一", "morning_run_plan": "3km @6:10", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-16": {"date": "2026-06-16", "week": "W4", "day": "周二", "morning_run_plan": "3km @6:00", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-17": {"date": "2026-06-17", "week": "W4", "day": "周三", "morning_run_plan": "3km @6:10", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-18": {"date": "2026-06-18", "week": "W4", "day": "周四", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-19": {"date": "2026-06-19", "week": "W4", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-20": {"date": "2026-06-20", "week": "W4", "day": "周六", "morning_run_plan": "6km @6:10", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-06-21": {"date": "2026-06-21", "week": "W4", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-06-22": {"date": "2026-06-22", "week": "W5", "day": "周一", "morning_run_plan": "3km @6:00", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-23": {"date": "2026-06-23", "week": "W5", "day": "周二", "morning_run_plan": "400m×6 @5:20", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-06-24": {"date": "2026-06-24", "week": "W5", "day": "周三", "morning_run_plan": "3km @6:00", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-25": {"date": "2026-06-25", "week": "W5", "day": "周四", "morning_run_plan": "3km 节奏@5:40", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-06-26": {"date": "2026-06-26", "week": "W5", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-27": {"date": "2026-06-27", "week": "W5", "day": "周六", "morning_run_plan": "7km @6:00", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-06-28": {"date": "2026-06-28", "week": "W5", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-06-29": {"date": "2026-06-29", "week": "W6", "day": "周一", "morning_run_plan": "3km @5:55", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-06-30": {"date": "2026-06-30", "week": "W6", "day": "周二", "morning_run_plan": "400m×8 @5:15", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-07-01": {"date": "2026-07-01", "week": "W6", "day": "周三", "morning_run_plan": "3km @5:55", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-02": {"date": "2026-07-02", "week": "W6", "day": "周四", "morning_run_plan": "3km 节奏@5:35", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-07-03": {"date": "2026-07-03", "week": "W6", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-04": {"date": "2026-07-04", "week": "W6", "day": "周六", "morning_run_plan": "8km @5:55", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-07-05": {"date": "2026-07-05", "week": "W6", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-07-06": {"date": "2026-07-06", "week": "W7", "day": "周一", "morning_run_plan": "3km @5:50", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-07": {"date": "2026-07-07", "week": "W7", "day": "周二", "morning_run_plan": "800m×5 @5:10", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-07-08": {"date": "2026-07-08", "week": "W7", "day": "周三", "morning_run_plan": "3km @5:50", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-09": {"date": "2026-07-09", "week": "W7", "day": "周四", "morning_run_plan": "3km 节奏@5:30", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-07-10": {"date": "2026-07-10", "week": "W7", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-11": {"date": "2026-07-11", "week": "W7", "day": "周六", "morning_run_plan": "8km @5:50", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-07-12": {"date": "2026-07-12", "week": "W7", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-07-13": {"date": "2026-07-13", "week": "W8", "day": "周一", "morning_run_plan": "3km @5:50", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-14": {"date": "2026-07-14", "week": "W8", "day": "周二", "morning_run_plan": "1km×4 @5:00", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-07-15": {"date": "2026-07-15", "week": "W8", "day": "周三", "morning_run_plan": "3km @5:50", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-16": {"date": "2026-07-16", "week": "W8", "day": "周四", "morning_run_plan": "3km 节奏@5:25", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-07-17": {"date": "2026-07-17", "week": "W8", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-18": {"date": "2026-07-18", "week": "W8", "day": "周六", "morning_run_plan": "10km @5:50", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-07-19": {"date": "2026-07-19", "week": "W8", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-07-20": {"date": "2026-07-20", "week": "W9", "day": "周一", "morning_run_plan": "3km @5:45", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-21": {"date": "2026-07-21", "week": "W9", "day": "周二", "morning_run_plan": "1km×5 @4:50", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-07-22": {"date": "2026-07-22", "week": "W9", "day": "周三", "morning_run_plan": "3km @5:45", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-23": {"date": "2026-07-23", "week": "W9", "day": "周四", "morning_run_plan": "3km 节奏@5:20", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-07-24": {"date": "2026-07-24", "week": "W9", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-25": {"date": "2026-07-25", "week": "W9", "day": "周六", "morning_run_plan": "10km @5:45", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-07-26": {"date": "2026-07-26", "week": "W9", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-07-27": {"date": "2026-07-27", "week": "W10", "day": "周一", "morning_run_plan": "3km @5:40", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-28": {"date": "2026-07-28", "week": "W10", "day": "周二", "morning_run_plan": "800m×6 @4:40", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-07-29": {"date": "2026-07-29", "week": "W10", "day": "周三", "morning_run_plan": "3km @5:40", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-07-30": {"date": "2026-07-30", "week": "W10", "day": "周四", "morning_run_plan": "3km 节奏@5:15", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-07-31": {"date": "2026-07-31", "week": "W10", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-01": {"date": "2026-08-01", "week": "W10", "day": "周六", "morning_run_plan": "12km @5:40", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；如次日献血：今日晨跑取消，改完全休息"}, "2026-08-02": {"date": "2026-08-02", "week": "W10", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-08-03": {"date": "2026-08-03", "week": "W11", "day": "周一", "morning_run_plan": "3km @5:35", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-04": {"date": "2026-08-04", "week": "W11", "day": "周二", "morning_run_plan": "400m×10 @4:35", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-08-05": {"date": "2026-08-05", "week": "W11", "day": "周三", "morning_run_plan": "3km @5:35", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-06": {"date": "2026-08-06", "week": "W11", "day": "周四", "morning_run_plan": "3km 节奏@5:10", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "节奏日：舒适地困难，可断续说话"}, "2026-08-07": {"date": "2026-08-07", "week": "W11", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-08": {"date": "2026-08-08", "week": "W11", "day": "周六", "morning_run_plan": "5km TT", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；测试日：记录总成绩、平均配速、主观疲劳；如次日献血：今日晨跑取消，改完全休息"}, "2026-08-09": {"date": "2026-08-09", "week": "W11", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}, "2026-08-10": {"date": "2026-08-10", "week": "W12", "day": "周一", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-11": {"date": "2026-08-11", "week": "W12", "day": "周二", "morning_run_plan": "1km×4 @4:45", "morning_detail": "7:00起；热身+慢跑10min；训练30-35min；冷却+拉伸", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐D：虾仁西兰花 + 杂粮饭", "snack": "加餐B：酸奶坚果", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "间歇日：组间慢跑200m恢复，优先完成质量"}, "2026-08-12": {"date": "2026-08-12", "week": "W12", "day": "周三", "morning_run_plan": "3km @5:50", "morning_detail": "7:20起；热身5min；跑后冷却+拉伸；8:18出门", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐C：鸡腿肉蔬菜炒 + 杂粮饭", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-13": {"date": "2026-08-13", "week": "W12", "day": "周四", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐C：卷饼火腿蛋", "lunch": "午餐C：牛肉蔬菜饭", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-14": {"date": "2026-08-14", "week": "W12", "day": "周五", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "待完成", "breakfast": "早餐B：快手燕麦套餐", "lunch": "午餐A：鸡胸肉杂粮饭", "dinner": "晚餐E：瘦肉蔬菜汤面", "snack": "加餐A：经典训练后加餐", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": ""}, "2026-08-15": {"date": "2026-08-15", "week": "W12", "day": "周六", "morning_run_plan": "10km TT", "morning_detail": "自然醒；半根香蕉；热身10min；跑后冷却+拉伸10min", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐D：周末煎蛋吐司", "lunch": "午餐B：鸡蛋虾仁饭", "dinner": "晚餐A：番茄鸡蛋豆腐汤 + 杂粮饭", "snack": "加餐C：轻量恢复", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "长距离日：不追速度，跑前半根香蕉，跑后30min内补给；测试日：记录总成绩、平均配速、主观疲劳；如次日献血：今日晨跑取消，改完全休息"}, "2026-08-16": {"date": "2026-08-16", "week": "W12", "day": "周日", "morning_run_plan": "休息", "morning_detail": "早晨休息", "evening_workout_plan": "", "calorie_target": "休息/备餐", "breakfast": "早餐A：经典蛋吐司套餐", "lunch": "午餐D：豆腐鸡肉碗", "dinner": "晚餐B：清蒸鱼 + 黄瓜木耳 + 杂粮饭", "snack": "非训练日可选：若饥饿选加餐C", "water_goal": "≥2.0L；夏季/长跑日2.5L+", "note": "备餐日：杂粮饭分装3-4天，肉类冷冻/腌制；如今日献血：全天休息，48h内不跑步"}};
+
+const PLAN_DATES = ["2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-27", "2026-06-28", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-18", "2026-07-19", "2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16"];
+
+// ============================
+// Storage
+// ============================
+const SK = 'fit_v3';
+
+function load(){ try{return JSON.parse(localStorage.getItem(SK))||{};}catch(e){return{};}}
+function save(d){ localStorage.setItem(SK,JSON.stringify(d)); }
+
+function getToday(){ return (new Date()).toISOString().slice(0,10); }
+let currentDate = getToday();
+
+function getData(date){
+  let d = load();
+  if(!d[date]) d[date] = {checks:{},customChecks:[],meals:[],workouts:[],body:{}};
+  return {all:d, today:d[date], date:date};
+}
+
+function saveData(date, td){
+  let d = load();
+  d[date] = td;
+  save(d);
+}
+
+// ============================
+// Tab switching
+// ============================
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  let btn = document.querySelector('.tab-btn[data-tab="'+name+'"]');
+  if(btn) btn.classList.add('active');
+  let panel = document.getElementById('panel-'+name);
+  if(panel) panel.classList.add('active');
+  if(name==='checklist') renderChecklist();
+  if(name==='meals') renderMeals();
+  if(name==='workout') renderWorkouts();
+  if(name==='body') renderBodyHistory();
+  if(name==='history') renderHistory();
+}
+
+document.getElementById('tabs').addEventListener('click', e=>{
+  if(e.target.classList.contains('tab-btn')) switchTab(e.target.dataset.tab);
+});
+
+// ============================
+// Date Picker
+// ============================
+function initDatePicker(){
+  let sel = document.getElementById('datePicker');
+  sel.innerHTML = PLAN_DATES.map(d=>'<option value="'+d+'"'+(d===currentDate?' selected':'')+'>'+d.slice(5)+'</option>').join('');
+}
+
+function onDateChange(){
+  currentDate = document.getElementById('datePicker').value;
+  renderAll();
+}
+
+// ============================
+// Build plan checklist
+// ============================
+function renderChecklist(){
+  let td = getData(currentDate).today;
+  let plan = DAILY_PLANS[currentDate];
+  
+  document.getElementById('planDayLabel').textContent = currentDate + (plan ? ' · '+plan.day : '');
+  
+  let items = [];
+  
+  if(plan){
+    document.getElementById('planWeekBadge').innerHTML = '<span class="tag tag-workout">'+plan.week+'</span>';
+    
+    // Morning run
+    if(plan.morning_run_plan && plan.morning_run_plan !== '休息' && plan.morning_run_plan !== ''){
+      items.push({id:'morning_run', title:'🌅 晨跑: '+plan.morning_run_plan, desc:plan.morning_detail||''});
+    }
+    if(plan.morning_run_plan === '休息'){
+      items.push({id:'morning_run', title:'🌅 晨跑: 休息日', desc:plan.morning_detail||'', rest:true});
+    }
+    
+    // Warmup / knee prep
+    items.push({id:'warmup', title:'🦵 跑前热身/护膝', desc:'蚌式开合、臀桥、动态热身'});
+    
+    // Evening workout
+    let ev = plan.evening_workout_plan || '';
+    if(ev && ev !== '休息' && ev !== '休息/备餐' && ev !== ''){
+      items.push({id:'evening_workout', title:'🏋️ 晚练: '+ev, desc:getWorkoutDetail(ev)});
+    }
+    if(ev.includes('休息')){
+      items.push({id:'evening_workout', title:'🏋️ 晚练: 休息', desc:'', rest:true});
+    }
+    
+    // Post-run recovery
+    items.push({id:'recovery', title:'🧊 跑后恢复', desc:'冷却、拉伸、必要时冰敷'});
+    
+    // Post-workout stretch
+    items.push({id:'stretch', title:'🧘 练后拉伸', desc:'胸、背、肱三头肌、腹、臀各30s'});
+    
+    // Meals
+    if(plan.breakfast) items.push({id:'meal_breakfast', title:'🍳 '+plan.breakfast, desc:getMealDetail(plan.breakfast)});
+    if(plan.lunch) items.push({id:'meal_lunch', title:'🍱 '+plan.lunch, desc:getMealDetail(plan.lunch)});
+    if(plan.dinner) items.push({id:'meal_dinner', title:'🍲 '+plan.dinner, desc:getMealDetail(plan.dinner)});
+    if(plan.snack && !plan.snack.includes('可选')) items.push({id:'meal_snack', title:'🥛 '+plan.snack, desc:getMealDetail(plan.snack)});
+    
+    // Water
+    items.push({id:'water', title:'💧 饮水: '+plan.water_goal, desc:''});
+    
+    // Calorie target
+    items.push({id:'calorie_target', title:'🎯 热量目标: '+plan.calorie_target, desc:''});
+  } else {
+    document.getElementById('planWeekBadge').innerHTML = '';
+  }
+  
+  // Always add some universal items
+  if(!plan){
+    items.push({id:'morning_run', title:'🌅 晨跑', desc:''});
+    items.push({id:'workout_general', title:'🏋️ 训练', desc:''});
+    items.push({id:'meal_breakfast', title:'🍳 早餐', desc:''});
+    items.push({id:'meal_lunch', title:'🍱 午餐', desc:''});
+    items.push({id:'meal_dinner', title:'🍲 晚餐', desc:''});
+  }
+  
+  // Build HTML
+  let checks = td.checks || {};
+  let done = 0, total = items.length;
+  let html = '<ul class="checklist">';
+  items.forEach(item=>{
+    let isDone = checks[item.id] === true;
+    if(isDone) done++;
+    let cls = isDone ? ' check-done' : '';
+    let boxCls = isDone ? ' done' : '';
+    html += '<li class="check-item'+cls+'" onclick="toggleCheck(\''+item.id+'\')">';
+    html += '<div class="check-box'+boxCls+'">'+(isDone?'\u2713':'')+'</div>';
+    html += '<div class="check-body"><div class="check-title">'+item.title+'</div>';
+    if(item.desc) html += '<div class="check-desc">'+item.desc+'</div>';
+    html += '</div></li>';
+  });
+  html += '</ul>';
+  
+  document.getElementById('planContent').innerHTML = html;
+  document.getElementById('planProgress').style.width = total>0?(done/total*100)+'%':'0%';
+  document.getElementById('planProgressText').textContent = done+'/'+total+' 完成'+(done===total&&total>0?' 🎉':'');
+  
+  renderCustomChecks();
+  updateSummary();
+}
+
+function toggleCheck(id){
+  let td = getData(currentDate).today;
+  if(!td.checks) td.checks = {};
+  td.checks[id] = !td.checks[id];
+  saveData(currentDate, td);
+  if(td.checks[id]) syncCheckToPanel(id);
+  renderChecklist();
+}
+
+function syncCheckToPanel(id){
+  if(!DAILY_PLANS[currentDate]) return;
+  if(id.startsWith('meal_')) syncMealFromCheck();
+  if(id==='evening_workout') syncWorkoutFromCheck();
+}
+
+function syncMealFromCheck(){
+  let plan = DAILY_PLANS[currentDate];
+  let td = getData(currentDate).today;
+  let ch = td.checks || {};
+  let map = {'meal_breakfast':plan.breakfast,'meal_lunch':plan.lunch,'meal_dinner':plan.dinner,'meal_snack':plan.snack};
+  for(let cid in map){
+    if(!ch[cid]||!map[cid]) continue;
+    let m = map[cid].match(/(早餐|午餐|晚餐|加餐)[A-E]/);
+    if(!m) continue;
+    let code = m[0];
+    if(td.meals.some(ml=>ml.code===code)) continue;
+    let meal = MEAL_PLANS.find(x=>x.code===code);
+    if(!meal) continue;
+    let km=meal.info.match(/~(\d+)kcal/), pm=meal.info.match(/P(\d+)/), cm=meal.info.match(/C(\d+)/), fm=meal.info.match(/F(\d+)/);
+    td.meals.push({id:Date.now()+Math.random(),name:meal.name,code:meal.code,weight:1,mealType:code.startsWith('早餐')?'早餐':code.startsWith('午餐')?'午餐':code.startsWith('晚餐')?'晚餐':'加餐',kcal:km?parseInt(km[1]):0,protein:pm?parseInt(pm[1]):0,carb:cm?parseInt(cm[1]):0,fat:fm?parseInt(fm[1]):0,ingredients:meal.ingredients,isPlanMeal:true});
+    saveData(currentDate, td);
+  }
+}
+
+function syncWorkoutFromCheck(){
+  let plan = DAILY_PLANS[currentDate];
+  let td = getData(currentDate).today;
+  let ev = plan.evening_workout_plan||'';
+  if(!ev||ev.includes('休息')||ev==='') return;
+  if(td.workouts.some(w=>w.name===ev)) return;
+  td.workouts.push({id:Date.now()+Math.random(),name:ev,category:'全身',sets:null,reps:null,weight:null,duration:null,distance:null,note:'按计划执行',isPlanWorkout:true});
+  saveData(currentDate, td);
+}
+
+// ============================
+// Custom checks
+// ============================
+function addCustomCheck(){
+  let input = document.getElementById('customCheckItem');
+  let text = input.value.trim();
+  if(!text) return;
+  let td = getData(currentDate).today;
+  if(!td.customChecks) td.customChecks = [];
+  td.customChecks.push({id:'c'+Date.now(), text:text, done:false});
+  saveData(currentDate, td);
+  input.value = '';
+  renderCustomChecks();
+  updateSummary();
+}
+
+function toggleCustomCheck(id){
+  let td = getData(currentDate).today;
+  let item = td.customChecks.find(c=>c.id===id);
+  if(item){ item.done = !item.done; saveData(currentDate, td); renderCustomChecks(); updateSummary(); }
+}
+
+function deleteCustomCheck(id){
+  let td = getData(currentDate).today;
+  td.customChecks = td.customChecks.filter(c=>c.id!==id);
+  saveData(currentDate, td);
+  renderCustomChecks();
+  updateSummary();
+}
+
+function renderCustomChecks(){
+  let td = getData(currentDate).today;
+  let items = td.customChecks || [];
+  let html = '';
+  items.forEach(item=>{
+    html += '<div class="check-item'+(item.done?' check-done':'')+'" style="cursor:pointer">';
+    html += '<div class="check-box'+(item.done?' done':'')+'" onclick="toggleCustomCheck(\''+item.id+'\')">'+(item.done?'\u2713':'')+'</div>';
+    html += '<div class="check-body" onclick="toggleCustomCheck(\''+item.id+'\')"><div class="check-title">'+item.text+'</div></div>';
+    html += '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteCustomCheck(\''+item.id+'\')">\u2715</button>';
+    html += '</div>';
+  });
+  document.getElementById('customChecklist').innerHTML = html;
+}
+
+// ============================
+// Meal helpers
+// ============================
+function getMealDetail(codeStr){
+  if(!codeStr) return '';
+  // Extract meal code like "早餐A" or "午餐B"
+  let m = codeStr.match(/(早餐|午餐|晚餐|加餐)[A-E]/);
+  if(!m) return codeStr;
+  let code = m[0];
+  let meal = MEAL_PLANS.find(x=>x.code===code);
+  if(meal) return meal.info + ' | ' + meal.ingredients;
+  return codeStr;
+}
+
+function getWorkoutDetail(name){
+  if(!name) return '';
+  let wo = WORKOUT_PLANS.find(w=>w.name===name || name.includes(w.name));
+  if(wo) return wo.content + ' ('+wo.note+')';
+  return '';
+}
+
+// ============================
+// Render meal plans for quick-add
+// ============================
+function renderMealPlans(){
+  let plan = DAILY_PLANS[currentDate];
+  if(!plan) { document.getElementById('mealPlanList').innerHTML = '<p class="text-sm">该日期无饮食计划</p>'; return; }
+  
+  let mealCodes = [];
+  let extractCode = (s)=>{
+    if(!s) return null;
+    let m = s.match(/(早餐|午餐|晚餐|加餐)[A-E]/);
+    return m ? m[0] : null;
+  };
+  
+  [plan.breakfast, plan.lunch, plan.dinner, plan.snack].forEach(s=>{
+    let c = extractCode(s);
+    if(c) mealCodes.push(c);
+  });
+  
+  if(mealCodes.length===0){
+    document.getElementById('mealPlanList').innerHTML = '<p class="text-sm">该日期无饮食计划</p>';
+    return;
+  }
+  
+  document.getElementById('mealPlanList').innerHTML = mealCodes.map(code=>{
+    let meal = MEAL_PLANS.find(m=>m.code===code);
+    if(!meal) return '';
+    return '<div class="meal-plan-card">'+
+      '<div class="meal-plan-info"><div class="meal-plan-name">'+meal.code+' '+meal.name+'</div>'+
+      '<div class="meal-plan-detail">'+meal.info+' | '+meal.ingredients+'</div></div>'+
+      '<button class="btn btn-sm btn-primary" onclick="quickAddMeal(\''+code+'\')">+添加</button></div>';
+  }).join('');
+}
+
+function quickAddMeal(code){
+  let meal = MEAL_PLANS.find(m=>m.code===code);
+  if(!meal) return;
+  
+  // Parse kcal from info string like "~420kcal / P28 C42 F14 / ~6元"
+  let kcalMatch = meal.info.match(/~(\d+)kcal/);
+  let pMatch = meal.info.match(/P(\d+)/);
+  let cMatch = meal.info.match(/C(\d+)/);
+  let fMatch = meal.info.match(/F(\d+)/);
+  
+  let td = getData(currentDate).today;
+  td.meals.push({
+    id: Date.now(),
+    name: meal.name,
+    code: meal.code,
+    weight: 1,  // 1 serving
+    mealType: meal.code.startsWith('早餐')?'早餐':meal.code.startsWith('午餐')?'午餐':meal.code.startsWith('晚餐')?'晚餐':'加餐',
+    kcal: kcalMatch?parseInt(kcalMatch[1]):0,
+    protein: pMatch?parseInt(pMatch[1]):0,
+    carb: cMatch?parseInt(cMatch[1]):0,
+    fat: fMatch?parseInt(fMatch[1]):0,
+    ingredients: meal.ingredients,
+    isPlanMeal: true
+  });
+  saveData(currentDate, td);
+  renderMeals();
+  updateSummary();
+}
+
+// ============================
+// Food Search & Add
+// ============================
+let foodSearch = null, foodSuggestions = null;
+function initFoodSearch(){
+  foodSearch = document.getElementById('foodSearch');
+  foodSuggestions = document.getElementById('foodSuggestions');
+  if(!foodSearch) return;
+  foodSearch.addEventListener('input', ()=>{
+    let q = foodSearch.value.trim().toLowerCase();
+    if(!q){ foodSuggestions.classList.remove('show'); return; }
+    let matches = FOOD_DB.filter(f=>f.name.toLowerCase().includes(q)).slice(0,8);
+    if(matches.length===0){
+      foodSuggestions.innerHTML = '<div class="food-suggestion-item" style="color:var(--text2)">未找到，可手动输入</div>';
+    } else {
+      foodSuggestions.innerHTML = matches.map(f=>'<div class="food-suggestion-item" data-name="'+f.name+'"><span>'+f.name+'</span><span class="kcal-hint">'+f.kcal+' kcal/100g</span></div>').join('');
+    }
+    foodSuggestions.classList.add('show');
+  });
+  foodSuggestions.addEventListener('click', e=>{
+    let item = e.target.closest('.food-suggestion-item');
+    if(item&&item.dataset.name){ foodSearch.value=item.dataset.name; foodSuggestions.classList.remove('show'); }
+  });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.food-search-wrap')&&foodSuggestions) foodSuggestions.classList.remove('show'); });
+}
+
+function addFood(){
+  let name = document.getElementById('foodSearch').value.trim();
+  let weight = parseFloat(document.getElementById('foodWeight').value)||100;
+  let mealType = document.getElementById('mealType').value;
+  if(!name) return;
+  
+  let found = FOOD_DB.find(f=>f.name===name);
+  let ratio = weight/100;
+  let item = {
+    id: Date.now(), name, weight, mealType,
+    kcal: found?Math.round(found.kcal*ratio):0,
+    protein: found?+(found.p*ratio).toFixed(1):0,
+    carb: found?+(found.c*ratio).toFixed(1):0,
+    fat: found?+(found.f*ratio).toFixed(1):0,
+    isCustom: !found
+  };
+  
+  let td = getData(currentDate).today;
+  td.meals.push(item);
+  saveData(currentDate, td);
+  document.getElementById('foodSearch').value='';
+  document.getElementById('foodWeight').value='100';
+  renderMeals();
+  updateSummary();
+}
+
+function deleteMeal(id){
+  let td = getData(currentDate).today;
+  td.meals = td.meals.filter(m=>m.id!==id);
+  saveData(currentDate, td);
+  renderMeals();
+  updateSummary();
+}
+
+function renderMeals(){
+  let td = getData(currentDate).today;
+  let totalKcal=0, totalP=0, totalC=0, totalF=0;
+  let container = document.getElementById('todayMeals');
+  
+  renderMealPlans();
+  
+  if(td.meals.length===0){
+    container.innerHTML = '<div class="empty-state"><span class="icon">\uD83C\uDF7D\uFE0F</span>今日无饮食记录</div>';
+  } else {
+    container.innerHTML = td.meals.map(m=>{
+      totalKcal+=m.kcal; totalP+=m.protein; totalC+=m.carb; totalF+=m.fat;
+      let macroStr = '';
+      if(m.protein) macroStr += '<span class="p">P'+m.protein+'g</span> ';
+      if(m.carb) macroStr += '<span class="c">C'+m.carb+'g</span> ';
+      if(m.fat) macroStr += '<span class="f">F'+m.fat+'g</span>';
+      return '<div class="meal-plan-card">'+
+        '<div class="meal-plan-info"><div class="meal-plan-name">'+m.name+(m.isCustom?' <span style="color:var(--text2);font-weight:400;font-size:0.7rem">(自定义)</span>':'')+'</div>'+
+        '<div class="meal-plan-detail">'+m.mealType+' · '+(m.isPlanMeal?'1份':m.weight+'g')+' <span class="macro-inline">'+macroStr+'</span></div></div>'+
+        '<div class="meal-plan-kcal">'+m.kcal+' kcal</div>'+
+        '<button class="btn btn-sm btn-danger" onclick="deleteMeal('+m.id+')">\u2715</button></div>';
+    }).join('');
+  }
+  
+  document.getElementById('statKcal').textContent = totalKcal;
+  document.getElementById('statProtein').textContent = totalP.toFixed(1)+'g';
+  document.getElementById('statCarb').textContent = totalC.toFixed(1)+'g';
+  document.getElementById('statFat').textContent = totalF.toFixed(1)+'g';
+}
+
+// ============================
+// Workout
+// ============================
+function updateExerciseList(){
+  let cat = document.getElementById('workoutCategory').value;
+  let list = EXERCISE_DB[cat]||[];
+  document.getElementById('exList').innerHTML = list.map(e=>'<option value="'+e+'">').join('');
+  
+  if(cat==='有氧'){
+    document.getElementById('strengthFields').style.display='none';
+    document.getElementById('cardioFields').style.display='block';
+  } else {
+    document.getElementById('strengthFields').style.display='grid';
+    document.getElementById('cardioFields').style.display='none';
+  }
+}
+
+document.getElementById('workoutCategory').addEventListener('change', updateExerciseList);
+updateExerciseList();
+
+// Render workout plans
+function renderWorkoutPlans(){
+  let plan = DAILY_PLANS[currentDate];
+  let container = document.getElementById('workoutPlanList');
+  if(!plan){ container.innerHTML='<p class="text-sm">该日期无训练计划</p>'; return; }
+  
+  let plans = [];
+  
+  // Morning run
+  if(plan.morning_run_plan && plan.morning_run_plan!=='休息' && plan.morning_run_plan!==''){
+    plans.push({name:'🌅 晨跑', detail:plan.morning_run_plan, desc:plan.morning_detail});
+  }
+  
+  // Evening workout  
+  let ev = plan.evening_workout_plan||'';
+  if(ev && !ev.includes('休息') && ev!==''){
+    let woName = ev.replace(/（\d+min）|\(\d+min\)/g,'').trim();
+    plans.push({name:'🏋️ 晚练', detail:ev, desc:getWorkoutDetail(ev)});
+  }
+  
+  if(plans.length===0){
+    container.innerHTML = '<p class="text-sm">该日期无训练计划</p>';
+    return;
+  }
+  
+  container.innerHTML = plans.map(p=>
+    '<div class="meal-plan-card"><div class="meal-plan-info"><div class="meal-plan-name">'+p.name+': '+p.detail+'</div>'+
+    (p.desc?'<div class="meal-plan-detail">'+p.desc+'</div>':'')+
+    '</div><button class="btn btn-sm btn-primary" onclick="quickAddWorkout(\''+p.detail.replace(/'/g,"\\'")+'\')">+记录</button></div>'
+  ).join('');
+}
+
+function quickAddWorkout(name){
+  let cat = '有氧';
+  let woName = name;
+  if(name.includes('力量')||name.includes('核心')||name.includes('上肢')||name.includes('全身')){
+    cat = '全身';
+  }
+  
+  let td = getData(currentDate).today;
+  td.workouts.push({
+    id: Date.now(),
+    name: name,
+    category: cat,
+    sets: null, reps: null, weight: null,
+    duration: null, distance: null,
+    note: '按计划执行',
+    isPlanWorkout: true
+  });
+  saveData(currentDate, td);
+  renderWorkouts();
+  updateSummary();
+}
+
+function addWorkout(){
+  let name = document.getElementById('workoutExName').value.trim();
+  let cat = document.getElementById('workoutCategory').value;
+  if(!name) return;
+  
+  let isCardio = cat==='有氧';
+  let item = {
+    id: Date.now(), name, category:cat,
+    sets: isCardio?null:(parseInt(document.getElementById('workoutSets').value)||0),
+    reps: isCardio?null:(parseInt(document.getElementById('workoutReps').value)||0),
+    weight: isCardio?null:(parseFloat(document.getElementById('workoutWeight').value)||0),
+    duration: isCardio?(parseInt(document.getElementById('workoutDuration').value)||0):null,
+    distance: isCardio?(parseFloat(document.getElementById('workoutDistance').value)||0):null,
+    note: document.getElementById('workoutNote').value.trim()
+  };
+  
+  let td = getData(currentDate).today;
+  td.workouts.push(item);
+  saveData(currentDate, td);
+  
+  ['workoutExName','workoutSets','workoutReps','workoutWeight','workoutDuration','workoutDistance','workoutNote'].forEach(id=>document.getElementById(id).value='');
+  renderWorkouts();
+  updateSummary();
+}
+
+function deleteWorkout(id){
+  let td = getData(currentDate).today;
+  td.workouts = td.workouts.filter(w=>w.id!==id);
+  saveData(currentDate, td);
+  renderWorkouts();
+  updateSummary();
+}
+
+function renderWorkouts(){
+  let td = getData(currentDate).today;
+  renderWorkoutPlans();
+  let container = document.getElementById('todayWorkouts');
+  
+  if(td.workouts.length===0){
+    container.innerHTML = '<div class="empty-state"><span class="icon">\uD83C\uDFCB\uFE0F</span>今日无训练记录</div>';
+  } else {
+    container.innerHTML = td.workouts.map(w=>{
+      let detail = w.category;
+      if(w.sets) detail += ' · '+w.sets+'\u7EC4\xD7'+w.reps+'\u6B21';
+      if(w.weight>0) detail += ' · '+w.weight+'kg';
+      if(w.duration) detail += ' · '+w.duration+'\u5206\u949F';
+      if(w.distance>0) detail += ' · '+w.distance+'km';
+      if(w.note) detail += ' · '+w.note;
+      return '<div class="meal-plan-card">'+
+        '<div class="meal-plan-info"><div class="meal-plan-name">'+w.name+'</div><div class="meal-plan-detail">'+detail+'</div></div>'+
+        '<button class="btn btn-sm btn-danger" onclick="deleteWorkout('+w.id+')">\u2715</button></div>';
+    }).join('');
+  }
+}
+
+// ============================
+// Body Data
+// ============================
+document.getElementById('bodyKnee').addEventListener('input', function(){
+  document.getElementById('kneeVal').textContent = this.value;
+});
+
+function addBodyData(){
+  let w = parseFloat(document.getElementById('bodyWeight').value);
+  if(!w) return;
+  let td = getData(currentDate).today;
+  td.body = {
+    weight: w,
+    fat: parseFloat(document.getElementById('bodyFat').value)||null,
+    waist: parseFloat(document.getElementById('bodyWaist').value)||null,
+    pulse: parseInt(document.getElementById('bodyPulse').value)||null,
+    sleep: parseFloat(document.getElementById('bodySleep').value)||null,
+    water: parseFloat(document.getElementById('bodyWater').value)||null,
+    knee: parseInt(document.getElementById('bodyKnee').value)||10,
+    time: new Date().toISOString()
+  };
+  saveData(currentDate, td);
+  ['bodyWeight','bodyFat','bodyWaist','bodyPulse','bodySleep','bodyWater'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bodyKnee').value=10;
+  document.getElementById('kneeVal').textContent='10';
+  renderBodyHistory();
+}
+
+function renderBodyHistory(){
+  let d = load();
+  let entries = Object.entries(d).filter(([dt,dd])=>dd.body&&dd.body.weight).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10);
+  let container = document.getElementById('bodyHistory');
+  
+  if(entries.length===0){
+    container.innerHTML = '<div class="card mt-12"><div class="empty-state"><span class="icon">\uD83D\uDCCF</span>暂无身体数据</div></div>';
+  } else {
+    let html = '<div class="card mt-12"><div class="card-header"><span class="card-title"><span class="icon">\uD83D\uDCC8</span>最近记录</span></div>';
+    entries.forEach(([date,dd])=>{
+      let b = dd.body;
+      let parts = ['\u4F53\u91CD <strong>'+b.weight+'kg</strong>'];
+      if(b.fat) parts.push('\u4F53\u8102 '+b.fat+'%');
+      if(b.waist) parts.push('\u8170\u56F4 '+b.waist+'cm');
+      if(b.sleep) parts.push('\u7761\u7720 '+b.sleep+'h');
+      if(b.water) parts.push('\u996E\u6C34 '+b.water+'L');
+      if(b.pulse) parts.push('\u6668\u8109 '+b.pulse);
+      if(b.knee!=null) parts.push('\u819D\u76D6 '+b.knee+'/10');
+      html += '<div class="history-item"><div class="history-date">'+date+'</div><div class="history-summary">'+parts.join(' \u00B7 ')+'</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+}
+
+// ============================
+// History
+// ============================
+function renderHistory(){
+  let d = load();
+  let dates = Object.keys(d).sort().reverse().slice(0,30);
+  let container = document.getElementById('historyList');
+  if(dates.length===0){
+    container.innerHTML = '<div class="empty-state"><span class="icon">\uD83D\uDCCA</span>暂无记录</div>';
+  } else {
+    container.innerHTML = dates.map(date=>{
+      let dd = d[date];
+      let totalKcal = dd.meals?dd.meals.reduce((s,m)=>s+m.kcal,0):0;
+      let woCount = dd.workouts?dd.workouts.length:0;
+      let checks = dd.checks||{};
+      let checkDone = Object.values(checks).filter(v=>v===true).length;
+      let checkTotal = Object.keys(checks).length;
+      let summary = [];
+      if(checkTotal>0) summary.push('\u2705 '+checkDone+'/'+checkTotal);
+      if(totalKcal>0) summary.push('\uD83C\uDF7D '+totalKcal+'kcal');
+      if(woCount>0) summary.push('\uD83C\uDFCB '+woCount+'\u52A8\u4F5C');
+      if(dd.body&&dd.body.weight) summary.push('\u2696 '+dd.body.weight+'kg');
+      let isToday = date===getToday();
+      return '<div class="history-item" style="border-left-color:'+(isToday?'var(--accent)':'var(--border)')+'">'+
+        '<div class="history-date">'+date+(isToday?' <span style="color:var(--accent);font-weight:600">(\u4ECA\u5929)</span>':'')+'</div>'+
+        '<div class="history-summary">'+(summary.join(' \u00B7 ')||'\u65E0\u8BB0\u5F55')+'</div></div>';
+    }).join('');
+  }
+}
+
+// ============================
+// Summary bar
+// ============================
+function updateSummary(){
+  let td = getData(currentDate).today;
+  let totalKcal = td.meals?td.meals.reduce((s,m)=>s+m.kcal,0):0;
+  let checks = td.checks||{};
+  let done = Object.values(checks).filter(v=>v===true).length;
+  let total = Object.keys(checks).length;
+  let customDone = (td.customChecks||[]).filter(c=>c.done).length;
+  done += customDone; total += (td.customChecks||[]).length;
+  document.getElementById('summaryContent').innerHTML = '\u4ECA\u5929 <strong>'+totalKcal+' kcal</strong> \u00B7 '+done+'/'+total+' \u5B8C\u6210';
+}
+
+// ============================
+// Export / Import
+// ============================
+function exportData(){
+  let data = load();
+  let blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = '\u6253\u5361\u6570\u636E\u5907\u4EFD_'+getToday()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showImport(){
+  document.getElementById('importModal').classList.add('show');
+}
+
+function hideImport(){
+  document.getElementById('importModal').classList.remove('show');
+  document.getElementById('importData').value='';
+}
+
+function doImport(){
+  try{
+    let imported = JSON.parse(document.getElementById('importData').value);
+    if(typeof imported!=='object') throw new Error();
+    let existing = load();
+    save({...existing, ...imported});
+    hideImport();
+    renderAll();
+  }catch(e){
+    alert('\u5BFC\u5165\u5931\u8D25\uFF1A\u6570\u636E\u683C\u5F0F\u4E0D\u6B63\u786E');
+  }
+}
+
+document.getElementById('importModal').addEventListener('click', e=>{
+  if(e.target===e.currentTarget) hideImport();
+});
+
+// ============================
+// Init
+// ============================
+function renderAll(){
+  initDatePicker();
+  renderChecklist();
+  renderMeals();
+  renderWorkouts();
+  renderBodyHistory();
+  renderHistory();
+  updateSummary();
+  initFoodSearch();
+}
+
+renderAll();
+</script>
+</body>
+</html>
+
+</body>
+</html>
